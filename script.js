@@ -88,8 +88,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     createBackgroundLetters();
+    addScrollInteractions();
     addLetterInteractions();
-    createBackgroundDecorations();
+    createGeometricDecorations();
+    initializeTimeline();
+    initializeSkills();
+    initializeContactInfo();
+    initializeDecorations();
     
     // 初始检查可见元素
     handleScroll();
@@ -111,190 +116,203 @@ document.addEventListener('mousemove', (e) => {
 
 // 创建随机背景字母
 function createBackgroundLetters() {
-    const container = document.querySelector('.background-letters');
-    const letters = 'LuoYuanRui';
-    const numLetters = 41; // 增加到41个字母（原来35个+6个）
-    const numGreenLetters = 12; // 增加到12个浅粉绿色字母（原来8个+4个）
-
-    // 创建所有字母
+    const heroSection = document.getElementById('hero');
+    const numLetters = 41;
+    const numGreenLetters = 12;
+    const letters = 'LluoYyaAnNRUiI';
+    const heroRect = heroSection.getBoundingClientRect();
+    
+    // 创建下拉提示
+    const scrollHint = document.createElement('div');
+    scrollHint.className = 'scroll-hint';
+    scrollHint.innerHTML = `
+        <div class="scroll-hint-text">向下滚动</div>
+        <div class="scroll-hint-arrow"></div>
+    `;
+    heroSection.appendChild(scrollHint);
+    
+    // 创建字母
     for (let i = 0; i < numLetters; i++) {
         const letter = document.createElement('div');
         letter.className = 'background-letter';
-        
-        // 随机选择一个字母
-        const randomLetter = letters[Math.floor(Math.random() * letters.length)];
-        letter.textContent = randomLetter;
-        
-        // 判断是否是大写字母
-        if (['L', 'Y', 'R'].includes(randomLetter)) {
-            letter.classList.add('capital');
-        } else {
-            letter.classList.add('regular');
+        if (i < numGreenLetters) {
+            letter.classList.add('green');
         }
+        letter.textContent = letters[Math.floor(Math.random() * letters.length)];
         
-        // 优化随机位置分布，避免字母过于集中
-        const x = Math.random() * 100;
-        const y = Math.random() * 100;
+        // 随机位置
+        const x = Math.random() * (heroRect.width - 100);
+        const y = Math.random() * (heroRect.height - 100);
         
-        // 确保字母不会太靠近边缘
-        letter.style.left = `${Math.max(5, Math.min(95, x))}%`;
-        letter.style.top = `${Math.max(5, Math.min(95, y))}%`;
+        // 随机大小
+        const size = Math.random() * 9 + 2;
         
-        // 随机动画延迟
-        letter.style.animationDelay = `${Math.random() * 5}s`;
+        // 随机方向（0-360度）
+        const rotation = Math.random() * 360;
         
-        // 随机旋转方向
-        if (Math.random() > 0.5) {
-            letter.style.animationDirection = 'reverse';
-        }
+        // 设置样式
+        letter.style.left = `${x}px`;
+        letter.style.top = `${y}px`;
+        letter.style.fontSize = `${size}rem`;
+        letter.style.transform = `rotate(${rotation}deg)`;
         
-        // 随机初始旋转角度
-        letter.style.transform = `rotate(${Math.random() * 360}deg)`;
-        
-        container.appendChild(letter);
-    }
-
-    // 随机选择12个字母设置为浅粉绿色
-    const allLetters = container.querySelectorAll('.background-letter');
-    const greenIndices = new Set();
-    
-    while (greenIndices.size < numGreenLetters) {
-        const randomIndex = Math.floor(Math.random() * allLetters.length);
-        greenIndices.add(randomIndex);
+        heroSection.appendChild(letter);
     }
     
-    greenIndices.forEach(index => {
-        allLetters[index].style.color = 'rgba(137, 245, 180, 0.3)'; // 浅粉绿色，透明度0.3
+    // 添加滚动事件监听
+    let lastScrollY = window.scrollY;
+    let ticking = false;
+    
+    window.addEventListener('scroll', () => {
+        lastScrollY = window.scrollY;
+        
+        if (!ticking) {
+            window.requestAnimationFrame(() => {
+                const letters = document.querySelectorAll('.background-letter');
+                const scrollPercent = Math.min(lastScrollY / (window.innerHeight * 0.5), 1);
+                
+                letters.forEach((letter, index) => {
+                    // 根据滚动位置计算偏移
+                    const baseOffset = 50;
+                    const randomOffset = Math.random() * 100 - 50;
+                    const offsetX = (baseOffset + randomOffset) * scrollPercent;
+                    const offsetY = (baseOffset + randomOffset) * scrollPercent;
+                    
+                    // 计算缩放
+                    const scale = 1 + scrollPercent * 0.5;
+                    
+                    // 计算透明度
+                    const opacity = 0.1 + scrollPercent * 0.4;
+                    
+                    // 获取当前旋转角度
+                    const currentRotation = letter.style.transform.match(/rotate\((\d+)deg\)/);
+                    const rotation = currentRotation ? currentRotation[1] : 0;
+                    
+                    // 应用变换
+                    letter.style.transform = `
+                        translate(${offsetX}px, ${offsetY}px)
+                        rotate(${rotation}deg)
+                        scale(${scale})
+                    `;
+                    letter.style.opacity = opacity;
+                    
+                    // 更新颜色
+                    if (index < numGreenLetters) {
+                        letter.style.color = `rgba(137, 245, 180, ${0.2 + scrollPercent * 0.3})`;
+                    } else {
+                        letter.style.color = `rgba(51, 51, 51, ${0.1 + scrollPercent * 0.2})`;
+                    }
+                });
+                
+                // 更新下拉提示的透明度
+                const scrollHint = document.querySelector('.scroll-hint');
+                if (scrollHint) {
+                    scrollHint.style.opacity = 1 - scrollPercent;
+                }
+                
+                ticking = false;
+            });
+            
+            ticking = true;
+        }
     });
 }
 
-// 添加背景字母的鼠标交互
+// 添加鼠标移动事件监听
 function addLetterInteractions() {
     const letters = document.querySelectorAll('.background-letter');
-    const hero = document.querySelector('#hero');
+    const heroSection = document.getElementById('hero');
     let mouseX = 0;
     let mouseY = 0;
-
-    // 跟踪鼠标位置
-    hero.addEventListener('mousemove', (e) => {
-        const rect = hero.getBoundingClientRect();
-        mouseX = e.clientX - rect.left;
-        mouseY = e.clientY - rect.top;
-
+    
+    heroSection.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        
         letters.forEach(letter => {
-            const letterRect = letter.getBoundingClientRect();
-            const letterX = letterRect.left - rect.left + letterRect.width / 2;
-            const letterY = letterRect.top - rect.top + letterRect.height / 2;
-
-            // 计算字母到鼠标的距离
-            const distanceX = mouseX - letterX;
-            const distanceY = mouseY - letterY;
-            const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+            const rect = letter.getBoundingClientRect();
+            const letterX = rect.left + rect.width / 2;
+            const letterY = rect.top + rect.height / 2;
             
-            // 设置影响范围
-            const radius = 200;
+            const distance = Math.sqrt(
+                Math.pow(mouseX - letterX, 2) + 
+                Math.pow(mouseY - letterY, 2)
+            );
             
-            if (distance < radius) {
-                // 计算移动和旋转程度
-                const power = (1 - distance / radius) * 30;
-                const moveX = (distanceX / distance) * power;
-                const moveY = (distanceY / distance) * power;
-                const rotate = (distanceX / radius) * 20;
+            if (distance < 200) {
+                const scale = 1 + (1 - distance / 200) * 0.2;
+                const opacity = 1 - (distance / 200) * 0.5;
+                const color = letter.classList.contains('green') ? 
+                    'rgba(137, 245, 180, 0.8)' : 
+                    'rgba(51, 51, 51, 0.8)';
                 
-                // 应用变换
-                letter.style.transform = `
-                    translate(${moveX}px, ${moveY}px)
-                    rotate(${rotate}deg)
-                    scale(${1 + power/100})
-                `;
-                
-                // 添加发光效果
-                if (letter.style.color.includes('rgba(137, 245, 180')) {
-                    letter.style.textShadow = `0 0 ${power}px rgba(137, 245, 180, 0.8)`;
-                } else {
-                    letter.style.textShadow = `0 0 ${power}px rgba(51, 51, 51, 0.3)`;
-                }
+                letter.style.transform = `scale(${scale})`;
+                letter.style.opacity = opacity;
+                letter.style.color = color;
             } else {
-                // 重置变换
-                letter.style.transform = '';
-                letter.style.textShadow = '';
+                letter.style.transform = 'scale(1)';
+                letter.style.opacity = '1';
+                letter.style.color = letter.classList.contains('green') ? 
+                    'rgba(137, 245, 180, 0.2)' : 
+                    'rgba(51, 51, 51, 0.1)';
             }
         });
     });
-
-    // 鼠标离开时重置所有字母
-    hero.addEventListener('mouseleave', () => {
+    
+    heroSection.addEventListener('mouseleave', () => {
         letters.forEach(letter => {
-            letter.style.transform = '';
-            letter.style.textShadow = '';
-        });
-    });
-
-    // 点击效果
-    letters.forEach(letter => {
-        letter.addEventListener('click', () => {
-            // 添加弹跳动画
-            letter.style.transform = 'scale(1.5) translateY(-20px)';
-            letter.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
-            
-            // 重置动画
-            setTimeout(() => {
-                letter.style.transform = 'scale(1) translateY(0)';
-                setTimeout(() => {
-                    letter.style.transition = '';
-                }, 300);
-            }, 300);
+            letter.style.transform = 'scale(1)';
+            letter.style.opacity = '1';
+            letter.style.color = letter.classList.contains('green') ? 
+                'rgba(137, 245, 180, 0.2)' : 
+                'rgba(51, 51, 51, 0.1)';
         });
     });
 }
 
-// 创建背景装饰
-function createBackgroundDecorations() {
-    const container = document.createElement('div');
-    container.className = 'background-decorations';
-    document.body.appendChild(container);
-
-    // 创建更多的装饰元素
-    const decorations = [
-        { type: 'line', count: 15 },
-        { type: 'circle', count: 12 },
-        { type: 'triangle', count: 8 },
-        { type: 'square', count: 10 },
-        { type: 'dot', count: 20 },
-        { type: 'plus', count: 8 }
-    ];
-
-    decorations.forEach(({ type, count }) => {
-        for (let i = 0; i < count; i++) {
+// 创建几何图形装饰
+function createGeometricDecorations() {
+    const sections = ['education', 'activities', 'contact'];
+    const shapes = ['circle', 'rectangle', 'triangle', 'line'];
+    
+    sections.forEach(sectionId => {
+        const section = document.getElementById(sectionId);
+        if (!section) return;
+        
+        const sectionRect = section.getBoundingClientRect();
+        const numDecorations = Math.floor(Math.random() * 10) + 15; // 15-25个装饰
+        
+        for (let i = 0; i < numDecorations; i++) {
+            const shape = shapes[Math.floor(Math.random() * shapes.length)];
             const decoration = document.createElement('div');
-            decoration.className = `decoration ${type}`;
-
-            // 随机位置
-            const x = Math.random() * 100;
-            const y = Math.random() * 100;
-            decoration.style.left = `${x}%`;
-            decoration.style.top = `${y}%`;
-
-            // 随机大小
-            const size = type === 'line' ? 
-                Math.random() * 100 + 50 : // 线条长度 50-150px
-                Math.random() * 20 + 10;   // 其他形状大小 10-30px
+            decoration.className = `geometric-decoration ${shape}`;
             
-            if (type === 'line') {
-                decoration.style.width = `${size}px`;
-                // 随机旋转角度
-                decoration.style.transform = `rotate(${Math.random() * 360}deg)`;
-            } else {
+            // 随机位置
+            const x = Math.random() * sectionRect.width;
+            const y = Math.random() * sectionRect.height;
+            
+            // 随机大小
+            const size = Math.random() * 100 + 10; // 10-110px
+            
+            // 设置样式
+            decoration.style.left = `${x}px`;
+            decoration.style.top = `${y}px`;
+            
+            if (shape === 'circle' || shape === 'rectangle') {
                 decoration.style.width = `${size}px`;
                 decoration.style.height = `${size}px`;
+            } else if (shape === 'line') {
+                decoration.style.width = `${size}px`;
+                decoration.style.height = '2px';
+                decoration.style.transform = `rotate(${Math.random() * 360}deg)`;
             }
-
+            
             // 随机动画
-            const animationDuration = Math.random() * 10 + 10; // 10-20秒
-            const animationDelay = Math.random() * 5; // 0-5秒延迟
-            decoration.style.animation = `float ${animationDuration}s ease-in-out ${animationDelay}s infinite`;
-
-            container.appendChild(decoration);
+            const duration = Math.random() * 10 + 10; // 10-20秒
+            const delay = Math.random() * 5; // 0-5秒延迟
+            decoration.style.animation = `float ${duration}s ease-in-out ${delay}s infinite`;
+            
+            section.appendChild(decoration);
         }
     });
 }
@@ -454,4 +472,57 @@ function initOrbInteraction() {
             orb.style.background = 'rgba(137, 245, 180, 0.15)';
         });
     });
+}
+
+function addScrollInteractions() {
+    const heroSection = document.getElementById('hero');
+    const letters = document.querySelectorAll('.background-letter');
+    const scrollHint = document.querySelector('.scroll-hint');
+    
+    let isScrolling = false;
+    let scrollTimeout;
+    
+    window.addEventListener('scroll', () => {
+        isScrolling = true;
+        clearTimeout(scrollTimeout);
+        
+        scrollTimeout = setTimeout(() => {
+            isScrolling = false;
+        }, 100);
+        
+        requestAnimationFrame(() => {
+            if (isScrolling) {
+                const scrollPosition = window.scrollY;
+                const heroHeight = heroSection.offsetHeight;
+                const scrollPercent = Math.min(scrollPosition / heroHeight, 1);
+                
+                // 更新字母透明度
+                letters.forEach(letter => {
+                    const opacity = 1 - scrollPercent;
+                    letter.style.opacity = opacity;
+                });
+                
+                // 更新提示透明度
+                if (scrollHint) {
+                    scrollHint.style.opacity = 1 - scrollPercent;
+                }
+            }
+        });
+    });
+}
+
+function initializeTimeline() {
+    // Implementation of initializeTimeline function
+}
+
+function initializeSkills() {
+    // Implementation of initializeSkills function
+}
+
+function initializeContactInfo() {
+    // Implementation of initializeContactInfo function
+}
+
+function initializeDecorations() {
+    // Implementation of initializeDecorations function
 } 
