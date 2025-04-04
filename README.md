@@ -1,4 +1,4 @@
-# 罗元瑞的个人简历网站
+# 黄慧凝的个人简历网站
 
 这是我的个人简历网站，使用 HTML、CSS 和 JavaScript 构建。
 
@@ -23,4 +23,4 @@
 
 ## 在线预览
 
-访问 [https://LelEzz-0912.github.io/Luo_yr-Resume](https://LelEzz-0912.github.io/Luo_yr-Resume) 查看在线版本。 
+访问 [https://你的用户名.github.io/仓库名](https://你的用户名.github.io/仓库名) 查看在线版本。 
